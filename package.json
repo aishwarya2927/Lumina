@@ -27,6 +27,7 @@
     "typescript": "~5.9.2"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.103.3",
     "acorn": "^8.16.0",
     "acorn-jsx": "^5.3.2",

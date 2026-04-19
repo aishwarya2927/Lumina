@@ -1,99 +1,105 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { createClient } from '@supabase/supabase-js';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+
+// 1. CONNECTION
+const supabase = createClient('https://jjyvsayedxfzmcsssbai.supabase.co', 'sb_publishable_Buro_BCxX3HJBrDRA3x4ag_1Cy5WEWL');
 
 export default function AddSubject() {
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const [subjectName, setSubjectName] = useState('');
-  const [minAttendance, setMinAttendance] = useState('75');
 
-  const handleCreate = () => {
-    if (subjectName.trim() === '') return;
-    
-    // Pro touch: Success vibration
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
-    console.log(`Created: ${subjectName} with goal ${minAttendance}%`);
-    
-    // For now, we just go back to the dashboard
-    router.back();
+  // 2. INSERT LOGIC
+  const handleAdd = async () => {
+    if (!name.trim()) {
+      Alert.alert("Error", "Please enter a subject name");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('SUBJECTS')
+        .insert([
+          { 
+            name: name, 
+            attendedClasses: 0, 
+            totalClasses: 0, 
+            color: '#8b5cf6' // Default purple color
+          }
+        ]);
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Subject added to Lumina!");
+      setName('');
+      router.push('/'); // Navigate back to Dashboard
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-      style={styles.container}
-    >
+    <LinearGradient colors={['#0f172a', '#1e293b']} style={styles.container}>
       <View style={styles.content}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#1e293b" />
-        </TouchableOpacity>
+        <Text style={styles.title}>New Intelligence</Text>
+        <Text style={styles.subtitle}>Enter the name of the subject you want to track.</Text>
 
-        <Text style={styles.title}>New Course</Text>
-        <Text style={styles.subtitle}>Fill in the details to start tracking.</Text>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>COURSE NAME</Text>
-          <TextInput 
+        <View style={styles.inputContainer}>
+          <TextInput
             style={styles.input}
-            placeholder="e.g. Data Structures"
-            placeholderTextColor="#94a3b8"
-            value={subjectName}
-            onChangeText={setSubjectName}
+            placeholder="e.g. Computer Networks"
+            placeholderTextColor="#64748b"
+            value={name}
+            onChangeText={setName}
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>MINIMUM ATTENDANCE GOAL (%)</Text>
-          <TextInput 
-            style={styles.input}
-            keyboardType="numeric"
-            value={minAttendance}
-            onChangeText={setMinAttendance}
-          />
-        </View>
-
-        <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
-          <Text style={styles.submitBtnText}>Create Subject</Text>
-          <Ionicons name="chevron-forward" size={20} color="#fff" />
+        <TouchableOpacity 
+          style={styles.button} 
+          onPress={handleAdd}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>INITIALIZE SUBJECT</Text>
+          )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, paddingTop: 60 },
-  backBtn: { marginBottom: 30 },
-  title: { fontSize: 32, fontWeight: '900', color: '#1e293b' },
-  subtitle: { fontSize: 16, color: '#64748b', marginBottom: 40 },
-  inputGroup: { marginBottom: 25 },
-  label: { fontSize: 12, fontWeight: '800', color: '#94a3b8', letterSpacing: 1, marginBottom: 10 },
-  input: { 
-    backgroundColor: '#f8fafc', 
-    padding: 18, 
-    borderRadius: 16, 
-    fontSize: 16, 
-    color: '#1e293b',
+  container: { flex: 1, justifyContent: 'center', padding: 30 },
+  content: { width: '100%' },
+  title: { color: '#fff', fontSize: 32, fontWeight: '900', marginBottom: 10 },
+  subtitle: { color: '#94a3b8', fontSize: 16, marginBottom: 40, lineHeight: 24 },
+  inputContainer: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: '#f1f5f9'
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 20,
+    marginBottom: 25,
   },
-  submitBtn: { 
-    backgroundColor: '#1e293b', 
-    padding: 20, 
-    borderRadius: 20, 
-    flexDirection: 'row', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    gap: 10,
-    marginTop: 20,
-    elevation: 8,
-    shadowColor: '#1e293b',
+  input: { height: 60, color: '#fff', fontSize: 18 },
+  button: {
+    backgroundColor: '#6366f1',
+    height: 60,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
-    shadowRadius: 10
+    shadowRadius: 20,
   },
-  submitBtnText: { color: '#fff', fontSize: 18, fontWeight: '700' }
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 1 },
 });
